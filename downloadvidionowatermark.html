@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHADOW GARDEN - Universal Downloader & Image Upscaler</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cinzel & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        shadowDark: '#050508',
+                        shadowCard: '#0d0d14',
+                        shadowPurple: '#8b5cf6',
+                        shadowNeon: '#a855f7',
+                        shadowGlow: 'rgba(168, 85, 247, 0.4)',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .magic-glow { box-shadow: 0 0 30px rgba(168, 85, 247, 0.25); }
+        .magic-glow:hover { box-shadow: 0 0 45px rgba(168, 85, 247, 0.5); }
+        .text-glow { text-shadow: 0 0 16px rgba(168, 85, 247, 0.8); }
+        .bg-pattern { background-image: radial-gradient(circle at center, rgba(139, 92, 246, 0.12) 0%, rgba(5, 5, 8, 0.98) 75%); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050508; }
+        ::-webkit-scrollbar-thumb { background: #2e1065; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a855f7; }
+    </style>
+</head>
+<body class="bg-shadowDark text-gray-200 font-sans min-h-screen flex flex-col justify-between bg-pattern relative overflow-x-hidden">
+
+    <!-- Ambient Glowing Orbs -->
+    <div class="absolute top-[-150px] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-purple-900/20 rounded-full blur-[140px] pointer-events-none"></div>
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-purple-900/30 bg-shadowDark/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="window.location.reload()">
+                <i class="fa-solid fa-eye text-shadowNeon text-2xl animate-pulse"></i>
+                <span class="font-cinzel text-xl font-bold tracking-widest text-white">SHADOW<span class="text-shadowNeon"> GARDEN</span></span>
+            </div>
+            <div class="text-[10px] sm:text-xs font-cinzel tracking-widest text-purple-400 border border-purple-500/30 px-3 py-1 rounded-full bg-purple-950/40 shadow-inner">
+                I AM ATOMIC
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-8 flex-grow flex flex-col items-center w-full relative z-10">
+        
+        <!-- Tab Switches -->
+        <div class="flex bg-shadowCard border border-purple-900/50 p-1.5 rounded-2xl mb-8 gap-2 w-full max-w-md shadow-xl">
+            <button id="tabVideo" onclick="switchTab('video')" class="flex-1 py-3 rounded-xl font-cinzel font-bold text-xs sm:text-sm tracking-wider transition-all bg-shadowNeon text-white shadow-lg shadow-purple-600/30">
+                <i class="fa-solid fa-video mr-2"></i> VIDEO DOWNLOADER
+            </button>
+            <button id="tabImage" onclick="switchTab('image')" class="flex-1 py-3 rounded-xl font-cinzel font-bold text-xs sm:text-sm tracking-wider transition-all text-gray-400 hover:text-white">
+                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> IMAGE HD (2X-8X)
+            </button>
+        </div>
+
+        <!-- ================= TAB 1: MEDIA DOWNLOADER ================= -->
+        <div id="sectionVideo" class="w-full flex flex-col items-center">
+            <div class="text-center mb-6">
+                <h1 class="font-cinzel text-3xl sm:text-5xl font-black text-white tracking-wider text-glow mb-2">
+                    MEDIA <span class="text-shadowNeon">DOWNLOADER</span>
+                </h1>
+                <p class="text-gray-400 text-xs sm:text-sm font-light max-w-lg mx-auto">
+                    Unduh video TikTok (No WM), Instagram Reels, dan YouTube langsung dari kegelapan.
+                </p>
+            </div>
+
+            <!-- Platform Icons -->
+            <div class="flex gap-6 text-2xl mb-6 text-purple-400/80">
+                <i class="fa-brands fa-tiktok hover:text-shadowNeon transition-colors" title="TikTok"></i>
+                <i class="fa-brands fa-instagram hover:text-shadowNeon transition-colors" title="Instagram"></i>
+                <i class="fa-brands fa-youtube hover:text-shadowNeon transition-colors" title="YouTube"></i>
+            </div>
+
+            <!-- Input Box -->
+            <div class="w-full bg-shadowCard border border-purple-900/50 p-4 sm:p-6 rounded-2xl magic-glow transition-all duration-300">
+                <form id="downloadForm" class="flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-grow">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-purple-400">
+                            <i class="fa-solid fa-link"></i>
+                        </div>
+                        <input type="url" id="mediaUrl" placeholder="Tempel URL TikTok, Instagram Reels, atau YouTube..." required
+                            class="w-full pl-11 pr-4 py-3.5 bg-shadowDark/80 border border-purple-900/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-shadowNeon transition-colors text-sm">
+                    </div>
+                    <button type="submit" id="btnSubmitVideo" 
+                        class="bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white font-cinzel font-bold px-8 py-3.5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-purple-900/50">
+                        <span>UNDUH</span>
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </button>
+                </form>
+
+                <!-- Loading Video -->
+                <div id="loadingVideo" class="hidden mt-6 text-center text-shadowNeon">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2"></i>
+                    <p class="font-cinzel text-xs tracking-widest animate-pulse">Mengekstrak Sihir Media...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMsgVideo" class="hidden mt-4 p-3 bg-red-950/60 border border-red-800/60 text-red-300 text-xs sm:text-sm rounded-xl text-center"></div>
+            </div>
+
+            <!-- Result Card Video -->
+            <div id="resultCardVideo" class="hidden w-full mt-8 bg-shadowCard border border-purple-800/40 rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row gap-6 items-center">
+                    <div class="w-full md:w-1/3 rounded-xl overflow-hidden border border-purple-900/50 relative bg-black/40 min-h-[180px] flex items-center justify-center">
+                        <img id="videoCover" src="" alt="Preview Media" class="w-full h-auto object-cover max-h-64 rounded-xl">
+                    </div>
+                    <div class="w-full md:w-2/3 flex flex-col justify-between h-full">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span id="platformBadge" class="bg-purple-950 border border-purple-500/40 text-purple-300 text-[10px] px-3 py-0.5 rounded-full font-cinzel font-bold">PLATFORM</span>
+                            </div>
+                            <h3 id="videoAuthor" class="text-shadowNeon font-cinzel font-bold text-base sm:text-lg mb-1">@creator</h3>
+                            <p id="videoTitle" class="text-gray-300 text-xs sm:text-sm line-clamp-3 mb-6 font-light"></p>
+                        </div>
+
+                        <div id="downloadContainer" class="flex flex-col gap-2.5"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: IMAGE HD UPSCALER ================= -->
+        <div id="sectionImage" class="w-full hidden flex-col items-center">
+            <div class="text-center mb-6">
+                <h1 class="font-cinzel text-3xl sm:text-5xl font-black text-white tracking-wider text-glow mb-2">
+                    IMAGE <span class="text-shadowNeon">HD ENHANCER</span>
+                </h1>
+                <p class="text-gray-400 text-xs sm:text-sm font-light max-w-lg mx-auto">
+                    Tingkatkan resolusi gambar Anda hingga 2x, 4x, atau 8x dengan kecerdasan algoritma penajaman piksel.
+                </p>
+            </div>
+
+            <div class="w-full bg-shadowCard border border-purple-900/50 p-4 sm:p-6 rounded-2xl magic-glow transition-all duration-300">
+                <!-- Drop Zone -->
+                <div id="dropZone" onclick="document.getElementById('imageInput').click()" 
+                    class="border-2 border-dashed border-purple-800/60 hover:border-shadowNeon bg-shadowDark/60 p-8 rounded-xl text-center cursor-pointer transition-all duration-300">
+                    <i class="fa-solid fa-cloud-arrow-up text-4xl text-purple-400 mb-3 animate-bounce"></i>
+                    <p class="text-white font-semibold text-sm mb-1">Klik atau seret foto ke sini</p>
+                    <p class="text-[11px] text-gray-500">Mendukung format JPG, PNG, WEBP (Max 15MB)</p>
+                    <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                </div>
+
+                <!-- Controls -->
+                <div id="upscaleControls" class="hidden mt-6 flex-col gap-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-purple-900/30 pt-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-cinzel text-purple-300 font-bold">TINGKAT PERBESARAN:</span>
+                            <div class="flex gap-2">
+                                <button onclick="setScale(2)" id="scaleBtn2" class="scale-btn px-4 py-1.5 rounded-lg border border-purple-500/40 bg-purple-950 text-white font-bold text-xs hover:border-shadowNeon transition-all">2X</button>
+                                <button onclick="setScale(4)" id="scaleBtn4" class="scale-btn px-4 py-1.5 rounded-lg border border-purple-500/30 bg-shadowDark text-gray-400 font-bold text-xs hover:border-shadowNeon transition-all">4X</button>
+                                <button onclick="setScale(8)" id="scaleBtn8" class="scale-btn px-4 py-1.5 rounded-lg border border-purple-500/30 bg-shadowDark text-gray-400 font-bold text-xs hover:border-shadowNeon transition-all">8X</button>
+                            </div>
+                        </div>
+
+                        <button id="btnProcessImage" onclick="processUpscaleImage()" 
+                            class="w-full sm:w-auto bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white font-cinzel font-bold px-6 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-900/50">
+                            <span>PROSES JADIKAN HD</span>
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                    </div>
+
+                    <!-- Loading Image -->
+                    <div id="loadingImage" class="hidden mt-4 text-center text-shadowNeon">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-1"></i>
+                        <p class="font-cinzel text-xs tracking-widest animate-pulse">Menghitung Matrix Penajaman Piksel...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Card Image -->
+            <div id="resultCardImage" class="hidden w-full mt-8 bg-shadowCard border border-purple-800/40 rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <span class="text-xs font-cinzel text-purple-300 font-bold"><i class="fa-solid fa-sparkles text-shadowNeon"></i> PRATINJAU HASIL HD</span>
+                        <span id="dimensionBadge" class="text-[11px] bg-purple-950 border border-purple-500/30 text-purple-300 px-3 py-1 rounded-full font-mono">0x0 px</span>
+                    </div>
+
+                    <!-- Split Preview / Before After Canvas Container -->
+                    <div class="w-full overflow-hidden rounded-xl border border-purple-900/50 bg-black/60 p-2 flex justify-center items-center max-h-[500px]">
+                        <img id="upscaledPreview" src="" alt="Hasil Upscale HD" class="max-w-full h-auto object-contain rounded-lg shadow-md">
+                    </div>
+
+                    <a id="btnDownloadImage" href="#" download="shadow_garden_hd.png" 
+                        class="w-full py-3.5 bg-shadowNeon hover:bg-purple-600 text-white font-bold rounded-xl text-center transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 font-cinzel text-sm sm:text-base">
+                        <i class="fa-solid fa-download"></i> UNDUH GAMBAR BERESOLUSI TINGGI
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-purple-900/30 py-6 bg-shadowDark/90 relative z-10">
+        <div class="max-w-6xl mx-auto px-4 text-center text-xs text-gray-500 font-cinzel">
+            <p>&copy; 2026 Shadow Garden System. Inspired by <span class="text-purple-400">The Eminence in Shadow</span>.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Professional Engine -->
+    <script>
+        // TAB SWITCHING LOGIC
+        function switchTab(tab) {
+            const btnVideo = document.getElementById('tabVideo');
+            const btnImage = document.getElementById('tabImage');
+            const secVideo = document.getElementById('sectionVideo');
+            const secImage = document.getElementById('sectionImage');
+
+            if(tab === 'video') {
+                btnVideo.className = "flex-1 py-3 rounded-xl font-cinzel font-bold text-xs sm:text-sm tracking-wider transition-all bg-shadowNeon text-white shadow-lg shadow-purple-600/30";
+                btnImage.className = "flex-1 py-3 rounded-xl font-cinzel font-bold text-xs sm:text-sm tracking-wider transition-all text-gray-400 hover:text-white";
+                secVideo.classList.remove('hidden');
+                secVideo.classList.add('flex');
+                secImage.classList.add('hidden');
+                secImage.classList.remove('flex');
+            } else {
+                btnImage.className = "flex-1 py-3 rounded-xl font-cinzel font-bold text-xs sm:text-sm tracking-wider transition-all bg-shadowNeon text-white shadow-lg shadow-purple-600/30";
+                btnVideo.className = "flex-1 py-3 rounded-xl font-cinzel font-bold text-xs sm:text-sm tracking-wider transition-all text-gray-400 hover:text-white";
+                secImage.classList.remove('hidden');
+                secImage.classList.add('flex');
+                secVideo.classList.add('hidden');
+                secVideo.classList.remove('flex');
+            }
+        }
+
+        // ================= 1. VIDEO DOWNLOADER MULTI-ENGINE =================
+        document.getElementById('downloadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const urlInput = document.getElementById('mediaUrl').value.trim();
+            const loading = document.getElementById('loadingVideo');
+            const errorMsg = document.getElementById('errorMsgVideo');
+            const resultCard = document.getElementById('resultCardVideo');
+
+            errorMsg.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                if (urlInput.includes('tiktok.com')) {
+                    await handleTikTok(urlInput);
+                } else if (urlInput.includes('youtube.com') || urlInput.includes('youtu.be')) {
+                    await handleYouTube(urlInput);
+                } else if (urlInput.includes('instagram.com')) {
+                    await handleInstagram(urlInput);
+                } else {
+                    showErrorVideo('Platform tidak dikenali. Masukkan URL TikTok, YouTube, atau Instagram yang valid.');
+                    loading.classList.add('hidden');
+                }
+            } catch (err) {
+                loading.classList.add('hidden');
+                showErrorVideo('Gagal memproses media. Pastikan tautan bersifat publik!');
+            }
+        });
+
+        // TikTok Engine
+        async function handleTikTok(url) {
+            try {
+                const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+                const data = await res.json();
+                document.getElementById('loadingVideo').classList.add('hidden');
+
+                if (data.code === 0) {
+                    const item = data.data;
+                    showResultVideo({
+                        platform: 'TikTok',
+                        author: `@${item.author.unique_id} (${item.author.nickname})`,
+                        title: item.title || 'Video TikTok',
+                        cover: item.cover,
+                        downloads: [
+                            { label: 'Unduh Video (Tanpa Watermark)', url: item.play, isPrimary: true },
+                            { label: 'Unduh HD Video', url: item.hdplay || item.play, isPrimary: false },
+                            { label: 'Unduh Audio (MP3)', url: item.music, isPrimary: false }
+                        ]
+                    });
+                } else {
+                    showErrorVideo('Tautan TikTok tidak valid atau video telah dihapus.');
+                }
+            } catch (e) {
+                document.getElementById('loadingVideo').classList.add('hidden');
+                showErrorVideo('Terjadi gangguan jaringan saat menghubungi server TikTok.');
+            }
+        }
+
+        // YouTube Engine (Multi-Instance Nodes)
+        async function handleYouTube(url) {
+            let videoId = '';
+            if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0];
+            } else if (url.includes('watch?v=')) {
+                videoId = url.split('watch?v=')[1].split('&')[0];
+            } else if (url.includes('shorts/')) {
+                videoId = url.split('shorts/')[1].split('?')[0];
+            }
+
+            if(!videoId) {
+                document.getElementById('loadingVideo').classList.add('hidden');
+                showErrorVideo('Format URL YouTube tidak valid.');
+                return;
+            }
+
+            const invidiousNodes = [
+                'https://invidious.nerdvpn.de',
+                'https://inv.us.projectsegfau.lt',
+                'https://invidious.flokinet.to',
+                'https://invidious.drgns.space'
+            ];
+
+            let nodeData = null;
+            for (let node of invidiousNodes) {
+                try {
+                    const res = await fetch(`${node}/api/v1/videos/${videoId}`);
+                    if (res.ok) {
+                        nodeData = await res.json();
+                        break;
+                    }
+                } catch (e) { continue; }
+            }
+
+            document.getElementById('loadingVideo').classList.add('hidden');
+
+            if (nodeData) {
+                let downloadButtons = [];
+                (nodeData.formatStreams || []).forEach(stream => {
+                    downloadButtons.push({
+                        label: `Unduh MP4 (${stream.qualityLabel || stream.quality})`,
+                        url: stream.url,
+                        isPrimary: stream.qualityLabel === '720p' || stream.qualityLabel === '1080p'
+                    });
+                });
+
+                if (nodeData.adaptiveFormats) {
+                    const audio = nodeData.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
+                    if (audio) {
+                        downloadButtons.push({ label: 'Unduh Audio saja (M4A/MP3)', url: audio.url, isPrimary: false });
+                    }
+                }
+
+                showResultVideo({
+                    platform: 'YouTube',
+                    author: nodeData.author || 'YouTube Channel',
+                    title: nodeData.title || 'Video YouTube',
+                    cover: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+                    downloads: downloadButtons.length > 0 ? downloadButtons : [
+                        { label: 'Unduh Direct MP4 Stream', url: `https://invidious.nerdvpn.de/latest_version?id=${videoId}&v=mp4`, isPrimary: true }
+                    ]
+                });
+            } else {
+                showErrorVideo('Gagal mengambil data dari YouTube. Coba beberapa saat lagi.');
+            }
+        }
+
+        // Instagram Engine
+        async function handleInstagram(url) {
+            try {
+                const response = await fetch(`https://api.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                document.getElementById('loadingVideo').classList.add('hidden');
+
+                if (data && data.data && data.data.play) {
+                    showResultVideo({
+                        platform: 'Instagram',
+                        author: '@instagram_user',
+                        title: data.data.title || 'Instagram Reels / Post',
+                        cover: data.data.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500',
+                        downloads: [ { label: 'Unduh Video Reels HD', url: data.data.play, isPrimary: true } ]
+                    });
+                } else {
+                    showErrorVideo('Gagal mengekstrak Instagram Reels. Pastikan akun tidak privat.');
+                }
+            } catch (err) {
+                document.getElementById('loadingVideo').classList.add('hidden');
+                showErrorVideo('Terjadi kesalahan koneksi saat memproses Instagram.');
+            }
+        }
+
+        function showResultVideo({ platform, author, title, cover, downloads }) {
+            document.getElementById('platformBadge').innerText = platform.toUpperCase();
+            document.getElementById('videoAuthor').innerText = author;
+            document.getElementById('videoTitle').innerText = title;
+            document.getElementById('videoCover').src = cover;
+
+            const container = document.getElementById('downloadContainer');
+            container.innerHTML = '';
+
+            downloads.forEach(dl => {
+                const a = document.createElement('a');
+                a.href = dl.url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.setAttribute('download', '');
+                
+                a.className = dl.isPrimary ? 
+                    "w-full py-3 bg-shadowNeon hover:bg-purple-600 text-white font-bold rounded-xl text-center transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 text-xs sm:text-sm font-cinzel" : 
+                    "w-full py-2.5 bg-shadowDark hover:bg-purple-950/60 border border-purple-800/60 text-purple-300 font-semibold rounded-xl text-center transition-all flex items-center justify-center gap-2 text-xs font-sans";
+
+                a.innerHTML = `<i class="fa-solid fa-download"></i> ${dl.label}`;
+                container.appendChild(a);
+            });
+
+            document.getElementById('resultCardVideo').classList.remove('hidden');
+        }
+
+        function showErrorVideo(message) {
+            const errorMsg = document.getElementById('errorMsgVideo');
+            errorMsg.innerText = message;
+            errorMsg.classList.remove('hidden');
+        }
+
+        // ================= 2. ADVANCED CANVAS HD UPSCALER ENGINE =================
+        let loadedImageObject = null;
+        let selectedScale = 2;
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    loadedImageObject = img;
+                    document.getElementById('upscaleControls').classList.remove('hidden');
+                    document.getElementById('upscaleControls').classList.add('flex');
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function setScale(scale) {
+            selectedScale = scale;
+            document.querySelectorAll('.scale-btn').forEach(btn => {
+                btn.className = "scale-btn px-4 py-1.5 rounded-lg border border-purple-500/30 bg-shadowDark text-gray-400 font-bold text-xs hover:border-shadowNeon transition-all";
+            });
+
+            const activeBtn = document.getElementById(`scaleBtn${scale}`);
+            activeBtn.className = "scale-btn px-4 py-1.5 rounded-lg border border-purple-500/40 bg-purple-950 text-white font-bold text-xs hover:border-shadowNeon transition-all";
+        }
+
+        function processUpscaleImage() {
+            if (!loadedImageObject) return;
+
+            const loading = document.getElementById('loadingImage');
+            const resultCard = document.getElementById('resultCardImage');
+            
+            loading.classList.remove('hidden');
+            resultCard.classList.add('hidden');
+
+            setTimeout(() => {
+                const w = loadedImageObject.width * selectedScale;
+                const h = loadedImageObject.height * selectedScale;
+
+                // Canvas Multi-Pass Render Engine
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = w;
+                canvas.height = h;
+
+                // Pass 1: High Quality Bicubic Scaling
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(loadedImageObject, 0, 0, w, h);
+
+                // Pass 2: Convolution Matrix Laplacian Sharpening
+                const imageData = ctx.getImageData(0, 0, w, h);
+                const enhancedData = applyAdvancedSharpen(imageData, w, h, selectedScale);
+                ctx.putImageData(enhancedData, 0, 0);
+
+                // Export Output
+                const dataUrl = canvas.toDataURL('image/png', 1.0);
+                document.getElementById('upscaledPreview').src = dataUrl;
+                document.getElementById('btnDownloadImage').href = dataUrl;
+                document.getElementById('dimensionBadge').innerText = `${w} x ${h} px (${selectedScale}X HD)`;
+
+                loading.classList.add('hidden');
+                resultCard.classList.remove('hidden');
+            }, 250);
+        }
+
+        // Algoritma Penajaman Piksel Berdasarkan Skala
+        function applyAdvancedSharpen(imageData, width, height, scale) {
+            const data = imageData.data;
+            const output = new Uint8ClampedArray(data);
+            
+            // Intensitas penajaman disesuaikan dengan tingkat perbesaran
+            const amount = scale === 8 ? 0.35 : (scale === 4 ? 0.25 : 0.15);
+            
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    for (let c = 0; c < 3; c++) {
+                        const idx = (y * width + x) * 4 + c;
+                        
+                        // Cross Laplacian Matrix calculation
+                        const top    = ((y - 1) * width + x) * 4 + c;
+                        const bottom = ((y + 1) * width + x) * 4 + c;
+                        const left   = (y * width + (x - 1)) * 4 + c;
+                        const right  = (y * width + (x + 1)) * 4 + c;
+
+                        const laplacian = data[top] + data[bottom] + data[left] + data[right] - (4 * data[idx]);
+                        const sharpValue = data[idx] - (amount * laplacian);
+
+                        output[idx] = Math.min(255, Math.max(0, sharpValue));
+                    }
+                }
+            }
+
+            for (let i = 0; i < data.length; i++) {
+                if (i % 4 !== 3) data[i] = output[i];
+            }
+            return imageData;
+        }
+    </script>
+</body>
+</html>
