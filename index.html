@@ -371,60 +371,107 @@
             }
         }
 
-        // Instagram Engine (Diperbarui dengan Multi-Fallback Server & Proxy Bypass)
+        // INSTAGRAM ENGINE (Sistem Ekstraksi Direct Native GraphQL Embed / Proxy Fallback)
         async function handleInstagram(url) {
             const loading = document.getElementById('loadingVideo');
 
-            const apiEngines = [
-                // Engine 1: Cobalt API Endpoint
+            // Ekstrak Shortcode dari URL Instagram
+            let cleanUrl = url.split('?')[0];
+            if (!cleanUrl.endsWith('/')) cleanUrl += '/';
+            
+            const matches = cleanUrl.match(/\/(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/);
+            const shortcode = matches ? matches[2] : null;
+
+            if (!shortcode) {
+                loading.classList.add('hidden');
+                showErrorVideo('Format URL Instagram Reels / Post tidak dikenali.');
+                return;
+            }
+
+            const fetchEngines = [
+                // Method 1: Direct Instagram Embed GraphQL Parsing melalui AllOrigins Proxy
                 async () => {
-                    const res = await fetch('https://api.cobalt.tools/api/json', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ url: url })
-                    });
+                    const embedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.instagram.com/p/${shortcode}/embed/captioned/`)}`;
+                    const res = await fetch(embedUrl);
                     const data = await res.json();
-                    if (data && data.url) {
+                    
+                    if (!data.contents) throw new Error('Embed gagal');
+
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data.contents, 'text/html');
+
+                    // Cari video URL langsung dari tag HTML/Script Embed Instagram
+                    let videoUrl = '';
+                    let coverUrl = '';
+
+                    // Ekstrak dari HTML Video tag
+                    const videoElem = doc.querySelector('video');
+                    if (videoElem && videoElem.src) {
+                        videoUrl = videoElem.src;
+                    }
+
+                    // Jika tidak ditemukan pada video tag, cari dari pola script JSON Embed
+                    if (!videoUrl) {
+                        const scriptTags = Array.from(doc.querySelectorAll('script'));
+                        for (let s of scriptTags) {
+                            if (s.textContent.includes('video_url')) {
+                                const matched = s.textContent.match(/"video_url":"([^"]+)"/);
+                                if (matched) {
+                                    videoUrl = matched[1].replace(/\\u0026/g, '&').replace(/\\/g, '');
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Cari thumbnail cover
+                    const imgElem = doc.querySelector('img.EmbeddedMediaImage') || doc.querySelector('img');
+                    if (imgElem && imgElem.src) {
+                        coverUrl = imgElem.src;
+                    }
+
+                    if (videoUrl) {
+                        return { url: videoUrl, cover: coverUrl };
+                    }
+                    throw new Error('Embed video URL tidak ditemukan');
+                },
+
+                // Method 2: DDInstagram OEmbed Mirror
+                async () => {
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://ddinstagram.com/oembed?url=${cleanUrl}`)}`;
+                    const res = await fetch(proxyUrl);
+                    const data = await res.json();
+                    const jsonData = JSON.parse(data.contents);
+
+                    if (jsonData && jsonData.thumbnail_url) {
+                        // Mengonversi URL thumbnail DDInstagram menjadi stream MP4 langsung
+                        const directVideo = jsonData.thumbnail_url.replace('/g/', '/v/').replace(/\.(jpg|jpeg|webp)/, '.mp4');
                         return {
-                            url: data.url,
-                            cover: data.picker ? data.picker[0]?.thumb : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500'
+                            url: directVideo,
+                            cover: jsonData.thumbnail_url
                         };
                     }
-                    throw new Error('Engine 1 Fail');
+                    throw new Error('DDInstagram fail');
                 },
-                // Engine 2: Snapsave Parser Server
+
+                // Method 3: Public Rapid Saver API
                 async () => {
-                    const res = await fetch(`https://api.vkrdown.com/api/instagram?url=${encodeURIComponent(url)}`);
+                    const res = await fetch(`https://api.vkrdown.com/api/instagram?url=${encodeURIComponent(cleanUrl)}`);
                     const data = await res.json();
-                    if (data && data.data && (data.data.url || data.data[0]?.url)) {
+                    if (data && data.data && (data.data.url || (Array.isArray(data.data) && data.data[0]?.url))) {
+                        const mediaUrl = data.data.url || data.data[0].url;
                         return {
-                            url: data.data.url || data.data[0].url,
+                            url: mediaUrl,
                             cover: data.data.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500'
                         };
                     }
-                    throw new Error('Engine 2 Fail');
-                },
-                // Engine 3: FastDownload Reverse Proxy
-                async () => {
-                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://ddinstagram.com/oembed?url=' + url)}`);
-                    const data = await res.json();
-                    if (data && data.thumbnail_url) {
-                        const videoUrl = data.thumbnail_url.replace('/g/', '/v/').replace('.jpg', '.mp4');
-                        return {
-                            url: videoUrl,
-                            cover: data.thumbnail_url
-                        };
-                    }
-                    throw new Error('Engine 3 Fail');
+                    throw new Error('VKR Downloader fail');
                 }
             ];
 
             let resultData = null;
 
-            for (let engine of apiEngines) {
+            for (let engine of fetchEngines) {
                 try {
                     resultData = await engine();
                     if (resultData && resultData.url) break;
@@ -435,18 +482,18 @@
 
             loading.classList.add('hidden');
 
-            if (resultData) {
+            if (resultData && resultData.url) {
                 showResultVideo({
                     platform: 'Instagram',
                     author: '@instagram_user',
-                    title: 'Instagram Reels / Post Video',
-                    cover: resultData.cover,
+                    title: 'Instagram Reels / Post Media',
+                    cover: resultData.cover || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500',
                     downloads: [
-                        { label: 'Unduh Reels / Video (HD)', url: resultData.url, isPrimary: true }
+                        { label: 'Unduh Video / Reels (HD)', url: resultData.url, isPrimary: true }
                     ]
                 });
             } else {
-                showErrorVideo('Gagal mengambil media Instagram. Pastikan akun tidak privat dan URL valid!');
+                showErrorVideo('Gagal mengambil media Instagram. Pastikan URL berasal dari postingan/Reels publik!');
             }
         }
 
